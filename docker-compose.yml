@@ -1,0 +1,34 @@
+version: "3.8"
+
+x-defaults: &defaults
+  depends_on:
+    - reverse-proxy
+  environment:
+    - NODE_ENV=docker-dev
+    - HOST=0.0.0.0
+  ports:
+    - "3000"
+  working_dir: /app
+  command: npm run dev
+
+services:
+  reverse-proxy:
+    image: traefik:v2.1
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker"
+      - "--providers.docker.exposedbydefault=false"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  app-service:
+    <<: *defaults
+    image: node:14
+    volumes:
+      - ./services/app-service:/app
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.solr-service.rule: Host(`rabbit-hole.localhost`)
