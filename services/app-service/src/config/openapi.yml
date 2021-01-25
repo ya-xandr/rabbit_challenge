@@ -56,7 +56,7 @@ components:
       type: object
       additionalProperties: false
       required:
-        - list
+        - answers
       properties:
-        list:
-          type: object
+        answers:
+          type: array

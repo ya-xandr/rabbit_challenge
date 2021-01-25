@@ -1,4 +1,4 @@
-version: "3.8"
+version: "2.4"
 
 x-defaults: &defaults
   depends_on:
@@ -29,6 +29,7 @@ services:
     image: node:14
     volumes:
       - ./services/app-service:/app
+    cpus: '4'
     labels:
       traefik.enable: "true"
       traefik.http.routers.solr-service.rule: Host(`rabbit-hole.localhost`)
