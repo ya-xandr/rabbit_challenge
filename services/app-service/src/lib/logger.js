@@ -6,7 +6,7 @@ const logger = bunyan.createLogger({
   name: config.appName,
   level: config.logger.level,
   serializers: bunyan.stdSerializers,
-  stream: config.isDev ? PrettyStdout : undefined,
+  stream: PrettyStdout,
 });
 
 module.exports = logger;

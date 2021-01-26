@@ -1,6 +1,19 @@
 const { workerData, parentPort } = require('worker_threads');
 const logger = require('../logger');
+const backtracking = require('./backtracking');
 
-logger.info(`Worker #${workerData.workerNumber} starts at: ${Date.now}`);
+parentPort.on('message', (data) => {
+  const {
+    workerNumber, wordlist, matches, charPool,
+  } = workerData;
 
-parentPort.postMessage(workerData.wordlist[workerData.workerNumber]);
+  logger.info(`Worker #${workerNumber} starts at: ${(new Date()).toISOString()}`);
+
+  const {
+    port, semaphores, availableMatches, stats,
+  } = data;
+
+  const result = backtracking(wordlist, charPool, matches, semaphores, availableMatches, workerNumber, port, stats);
+
+  port.postMessage(result);
+});

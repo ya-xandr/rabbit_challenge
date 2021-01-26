@@ -1,56 +1,96 @@
-const { Worker } = require('worker_threads');
+const { Worker, MessageChannel } = require('worker_threads');
 const path = require('path');
-// eslint-disable-next-line no-unused-vars
-const backtracking = require('./backtracking');
+const config = require('../../config');
+const logger = require('../logger');
 
-const WORKERS_NUMBER = 4;
+const WORKERS_NUMBER = config.cpu;
 
-const runTask = (workerData) => new Promise((resolve, reject) => {
-  const worker = new Worker(path.join(__dirname, 'worker.js'), { workerData });
-  worker.on('message', resolve);
+const runInspector = (semaphores, availableMatches, stats) => new Promise((resolve, reject) => {
+  const { port1, port2 } = new MessageChannel();
+  const worker = new Worker(path.join(__dirname, '..', 'utils/inspector.js'), { });
+  port1.on('message', (result) => {
+    if (result.log) {
+      logger.debug(`State: ${result.log}`);
+    } else {
+      resolve(result);
+    }
+  });
+  worker.postMessage({
+    port: port2, semaphores, availableMatches, stats,
+  }, [port2]);
   worker.on('error', reject);
   worker.on('exit', (code) => {
     if (code !== 0) { reject(new Error(`Worker stopped with exit code ${code}`)); }
   });
 });
 
-const convertPraseToCharPool = (phrase) => {
-  const charList = {};
-  // eslint-disable-next-line no-restricted-syntax
-  for (const char of phrase) {
-    if (![' ', "'"].includes(char)) {
-      if (Object.prototype.hasOwnProperty.call(charList, char)) {
-        charList[char] += 1;
-      } else {
-        charList[char] = 1;
-      }
+const runTask = (workerData, semaphores, availableMatches, stats) => new Promise((resolve, reject) => {
+  const { port1, port2 } = new MessageChannel();
+  const worker = new Worker(path.join(__dirname, 'worker.js'), { workerData });
+  port1.on('message', (result) => {
+    if (result.log) {
+      logger.debug(`${workerData.workerNumber}: ${result.log}`);
+    } else {
+      resolve(result);
     }
-  }
-  return charList;
-};
+  });
+  worker.postMessage({
+    port: port2, semaphores, availableMatches, stats,
+  }, [port2]);
+  worker.on('error', reject);
+  worker.on('exit', (code) => {
+    if (code !== 0) { reject(new Error(`Worker stopped with exit code ${code}`)); }
+  });
+});
 
-const findAnagrams = async (anagram, matches, wordlist) => {
+const findAnagrams = async (charPool, matches, wordlist) => {
   const pool = [];
-  const charPool = convertPraseToCharPool(anagram);
-  const sab = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * wordlist.length);
-  const semaphores = new Int32Array(sab);
+  const wordSab = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * wordlist.length);
+  const semaphores = new Int32Array(wordSab);
   for (let i = 0; i < semaphores.length; i += 1) {
     semaphores[i] = i;
   }
-  for (let i = 0; i < WORKERS_NUMBER; i += 1) {
-    pool.push(runTask({
-      workerNumber: i,
-      charPool,
-      matches,
-      wordlist,
-      semaphores,
-    }));
+  const matchesSab = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * matches.length);
+  const availableMatches = new Int32Array(matchesSab);
+  for (let i = 0; i < availableMatches.length; i += 1) {
+    availableMatches[i] = i;
   }
-  const results = await Promise.all(pool);
 
-  // const results = backtracking(wordlist, charPool, matches);
+  const statsSab = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 2);
+  const stats = new Int32Array(statsSab);
+  for (let i = 0; i < availableMatches.length; i += 1) {
+    stats[i] = 0;
+  }
 
-  return results;
+  const workerData = {
+    charPool,
+    matches,
+    wordlist,
+  };
+
+  runInspector(
+    semaphores,
+    availableMatches,
+    stats,
+  );
+
+  for (let i = 0; i < WORKERS_NUMBER; i += 1) {
+    workerData.workerNumber = i;
+    pool.push(
+      runTask(
+        workerData,
+        semaphores,
+        availableMatches,
+        stats,
+      ),
+    );
+  }
+
+  const workersResults = await Promise.all(pool);
+
+  const phrases = [].concat(...workersResults);
+
+  return phrases;
 };
 
 module.exports = {

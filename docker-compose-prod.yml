@@ -20,13 +20,12 @@ services:
   app-service:
     <<: *defaults
     environment:
-      - NODE_ENV=docker-dev
+      - NODE_ENV=prod
       - HOST=0.0.0.0
     ports:
       - "3000"
-      - 9229:9229
     working_dir: /app
-    command: npm run dev
+    command: npm run start
     image: node:14
     volumes:
       - ./services/app-service:/app

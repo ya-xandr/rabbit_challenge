@@ -1,17 +1,10 @@
-const environment = process.env.NODE_ENV || 'development';
-// eslint-disable-next-line import/no-dynamic-require
-const envConfigs = require(`./${environment}.json`);
-
-const isDev = ['docker-dev'].includes(environment);
-
-const sharedConfigs = {
+const configs = {
   appName: 'app-service',
   port: 3000,
   logger: {
-    level: isDev ? 'debug' : 'info',
+    level: 'debug',
   },
-  isDev,
-  environment,
+  cpu: 7,
 };
 
-module.exports = { ...sharedConfigs, ...envConfigs };
+module.exports = configs;

@@ -1,26 +1,30 @@
 const { findAnagrams } = require('../../lib/anagrams/finder');
 const logger = require('../../lib/logger');
 
-const filterWordlist = (words, phrase) => {
-  const chars = phrase.split('').reduce((ac, value) => {
-    if (value !== ' ' && !ac.includes(value)) {
-      ac.push(value);
-    }
-    return ac;
-  }, []);
-
-  return words.filter((word) => {
-    let wordOK = true;
-    // eslint-disable-next-line no-restricted-syntax
-    for (const char of word) {
-      if (char !== "'" && !chars.includes(char)) {
-        wordOK = false;
-        break;
+const convertPraseToCharPool = (phrase) => {
+  const charList = {};
+  // eslint-disable-next-line no-restricted-syntax
+  for (const char of phrase) {
+    if (char !== ' ') {
+      if (Object.prototype.hasOwnProperty.call(charList, char)) {
+        charList[char] += 1;
+      } else {
+        charList[char] = 1;
       }
     }
-    return wordOK;
-  });
+  }
+  return charList;
 };
+
+const prepareWordlist = (wordlist) => wordlist.sort((a, b) => b.length - a.length);
+
+const filterWordlist = (words, charPool) => words.filter(
+  (word) => {
+    const wordCharPool = convertPraseToCharPool(word);
+    // eslint-disable-next-line max-len
+    return Object.keys(wordCharPool).every((char) => Object.prototype.hasOwnProperty.call(charPool, char) && wordCharPool[char] <= charPool[char]);
+  },
+);
 
 const findAnswers = async (req, res) => {
   const { body: { anagram, matches } } = req;
@@ -30,7 +34,8 @@ const findAnswers = async (req, res) => {
     logger.info(`${i}) ${matches[i]}`);
   }
 
-  // const wordlist = ['a', 'poul', 'try', 'out', 'wits', 'ants'];
+  const charPool = convertPraseToCharPool(anagram);
+
   let wordlist = [];
   try {
     wordlist = req.files[0].buffer
@@ -38,17 +43,21 @@ const findAnswers = async (req, res) => {
       .split('\n')
       .filter((word) => Boolean(word.trim().length));
 
-    wordlist = filterWordlist(wordlist, anagram);
+    wordlist = filterWordlist(wordlist, charPool);
   } catch (error) {
     res.status(400).json({ message: 'Wrong wordlist format' });
   }
 
   logger.info(`${wordlist.length} words added`);
-  console.log(wordlist);
 
-  const answers = await findAnagrams(anagram, matches, wordlist);
+  wordlist = prepareWordlist(wordlist);
 
-  res.status(200).json({ answers });
+  try {
+    const answers = await findAnagrams(charPool, matches, wordlist);
+    res.status(200).json({ answers });
+  } catch (e) {
+    res.status(500).json({ error: e });
+  }
 };
 
 module.exports = {
