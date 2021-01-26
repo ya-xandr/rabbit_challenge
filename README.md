@@ -13,7 +13,7 @@ API definition available via ```http://rabbit-hole.localhost/spec``` URL
 Request example:
 ```
 curl --location --request POST 'http://rabbit-hole.localhost/api/v1/findAnswers' \
---form 'wordlist=@"/home/serhii/Downloads/wordlist.csv"' \
+--form 'wordlist=@"./wordlist.csv"' \
 --form 'anagram="poultry outwits ants"' \
 --form 'matches[]="e4820b45d2277f3844eac66c903e84be"' \
 --form 'matches[]="23170acc097c24edb98fc5488ab033fe"' \
