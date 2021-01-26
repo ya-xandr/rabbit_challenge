@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-param-reassign */
 const md5 = require('md5');
@@ -63,7 +62,11 @@ const permutator = (inputArr, matches, availableMatches, port) => {
   permute(inputArr);
 };
 
-function backtracking(wordlist, charPool, matches, result, semaphores, availableMatches, workerNumber, port, stats) {
+function backtracking(
+  wordlist, charPool, matches,
+  result, semaphores, availableMatches,
+  workerNumber, port, stats, minIndex,
+) {
   if (availableMatches.every((item) => item === -1)) {
     return;
   }
@@ -79,9 +82,9 @@ function backtracking(wordlist, charPool, matches, result, semaphores, available
     permutator(result, matches, availableMatches, port);
     Atomics.add(stats, 1, factorials[result.length]);
   }
-  for (let i = 0; i < wordlist.length; i += 1) {
-    if (Atomics.compareExchange(semaphores, i, i, -1) !== -1) {
-      const word = wordlist[i];
+  for (; minIndex < wordlist.length; minIndex += 1) {
+    if (Atomics.compareExchange(semaphores, minIndex, minIndex, -1) !== -1) {
+      const word = wordlist[minIndex];
       let wordOK = true;
       for (const char of word) {
         if (Object.prototype.hasOwnProperty.call(charPool, char)) {
@@ -94,11 +97,15 @@ function backtracking(wordlist, charPool, matches, result, semaphores, available
 
       if (wordOK) {
         result.push(word);
-        backtracking(wordlist, charPool, matches, result, semaphores, availableMatches, workerNumber, port, stats);
+        backtracking(
+          wordlist, charPool, matches,
+          result, semaphores, availableMatches,
+          workerNumber, port, stats, minIndex + 1,
+        );
         result.pop();
       }
 
-      Atomics.store(semaphores, i, i);
+      Atomics.store(semaphores, minIndex, minIndex);
 
       for (const char of word) {
         if (Object.prototype.hasOwnProperty.call(charPool, char)) {
@@ -110,6 +117,6 @@ function backtracking(wordlist, charPool, matches, result, semaphores, available
 }
 
 module.exports = (wordlist, charPool, matches, semaphores, availableMatches, workerNumber, port, stats) => {
-  backtracking(wordlist, charPool, matches, [], semaphores, availableMatches, workerNumber, port, stats);
+  backtracking(wordlist, charPool, matches, [], semaphores, availableMatches, workerNumber, port, stats, 0);
   return results;
 };

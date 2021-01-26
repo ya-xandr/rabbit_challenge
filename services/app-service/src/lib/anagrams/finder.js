@@ -29,7 +29,7 @@ const runTask = (workerData, semaphores, availableMatches, stats) => new Promise
   const worker = new Worker(path.join(__dirname, 'worker.js'), { workerData });
   port1.on('message', (result) => {
     if (result.log) {
-      logger.debug(`${workerData.workerNumber}: ${result.log}`);
+      logger.debug(result.log);
     } else {
       resolve(result);
     }
