@@ -21,8 +21,9 @@ const prepareWordlist = (wordlist) => wordlist.sort((a, b) => b.length - a.lengt
 const filterWordlist = (words, charPool) => words.filter(
   (word) => {
     const wordCharPool = convertPraseToCharPool(word);
-    // eslint-disable-next-line max-len
-    return Object.keys(wordCharPool).every((char) => Object.prototype.hasOwnProperty.call(charPool, char) && wordCharPool[char] <= charPool[char]);
+    return Object.keys(wordCharPool).every(
+      (char) => Object.prototype.hasOwnProperty.call(charPool, char) && wordCharPool[char] <= charPool[char],
+    );
   },
 );
 
