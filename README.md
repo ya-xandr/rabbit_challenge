@@ -46,4 +46,4 @@ app-service_1    | [925762475d41]   1/26/2021, 9:25:13 PM   State: {"0":-1,"1":-
 app-service_1    | [925762475d41]   1/26/2021, 9:25:13 PM   State: anangram sets produced: 79657, permutations made: 30934956
 ```
 
-Notes: Since worker threads could allocate different (it's random) then time required to find solution may vary in significant range. There is a possible place to optimize solution. We can use approach similar to Monte Carlo method and run several parallel routine which will gets to the solutions via different solution trees and gets this solution faster than single run.
+Notes: Since worker threads could allocate different words subsets (it's random) then time required to find solution may vary in a significant range. There is a possible place to optimize solution. We can use approach similar to Monte Carlo method and run several parallel routine which will gets to the solutions via different solution trees and gets this solution faster than single run.
