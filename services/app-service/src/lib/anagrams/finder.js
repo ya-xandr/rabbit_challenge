@@ -12,6 +12,7 @@ const runInspector = (semaphores, availableMatches, stats) => new Promise((resol
     if (result.log) {
       logger.debug(`State: ${result.log}`);
     } else {
+      logger.debug(result);
       resolve(result);
     }
   });
@@ -89,7 +90,9 @@ const findAnagrams = async (charPool, matches, wordlist) => {
   const workersResults = await Promise.all(pool);
 
   const phrases = [].concat(...workersResults);
-
+  for (let i = 0; i < availableMatches.length; i += 1) {
+    availableMatches[i] = -1;
+  }
   return phrases;
 };
 
